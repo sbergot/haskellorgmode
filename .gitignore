@@ -1,0 +1,12 @@
+#*#
+dist
+*.pyc
+*~
+*.manifest
+*.exe
+*.suo
+*.dll
+*.Cache
+*.pdb
+*.resources
+**/#*#

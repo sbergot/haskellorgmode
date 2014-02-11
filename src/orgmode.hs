@@ -1,13 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-import qualified Data.Set as S
+module OrgMode where
+
 import qualified Data.Text as T
-import qualified Data.Text.IO as TIO
 import Text.Parsec
 import Text.Parsec.Text
 import Control.Monad
 import Control.Applicative hiding (many)
-import System.Environment
 
 type Paragraph = T.Text
 type NodeText = [Paragraph]
@@ -33,49 +32,65 @@ data OrgDoc = OrgDoc
 tilleol :: Parser T.Text
 tilleol = T.pack <$> (many $ noneOf "\n")
 
+noOut :: Monad m => m a -> m ()
+noOut = (>> return ())
+
+space_ :: Parser ()
+space_ = noOut space
+
+char_ :: Char -> Parser ()
+char_ c = noOut $ char c
+
+newline_ :: Parser ()
+newline_ = noOut newline
+
 outlineParser :: [Status] ->  Int -> Parser Outline
 outlineParser userStatus level = do
-    replicateM_ level $ char '*'
-    space
-    status <- optionMaybe $ T.pack <$> (choice $ map (try . string . T.unpack) userStatus)
+    replicateM_ level $ char_ '*'
+    space_
+    status <- optionMaybe $ T.pack <$> do
+        st <- (choice $ map (try . string . T.unpack) userStatus)
+        space_
+        return st
     title <- T.pack <$> (many $ noneOf ":\n")
-    tags <- sepBy tagParser spaces
-    newline
+    tags <- sepBy tagParser (many $ char ' ')
+    newline_
     text <- nodeTextParser level
+    spaces
     children <- many $ try $ outlineParser userStatus (level + 1)
-    return $ Outline title status tags text children
+    return $ Outline (T.strip title) status tags text children
 
 tagParser :: Parser Tag
 tagParser = do
-    char ':'
-    tag <- many letter
-    char ':'
+    char_ ':'
+    tag <- many (noneOf " :\n")
+    char_ ':'
     return $ T.pack tag
 
 paragraphParser :: Int -> Parser Paragraph
 paragraphParser level = T.unlines <$> many line where
     line = do
-        replicateM_ (level + 1) $ char ' '
+        replicateM_ (level + 1) $ char_ ' '
         ws <- tilleol
-        newline
+        newline_
         return ws
 
 nodeTextParser :: Int -> Parser NodeText
-nodeTextParser level = sepBy (paragraphParser level) (many1 newline)
+nodeTextParser level = sepBy (paragraphParser level) (many1 newline_)
 
 headerParser :: Parser Header
-headerParser = T.concat <$> sepBy hline newline where
-    hline = option "" (char '#' >> tilleol)
+headerParser = T.concat <$> sepBy hline newline_ where
+    hline = option "" (char_ '#' >> tilleol)
 
 orgDocParser :: [Status] ->  Int -> Parser OrgDoc
 orgDocParser userStatus level = OrgDoc <$> headerParser <*> outlineParser userStatus level
 
 parseOrgDoc :: [Status] -> String -> T.Text -> Either ParseError OrgDoc
-parseOrgDoc userStatus sourceName inp = parse (orgDocParser userStatus 1) sourceName inp
+parseOrgDoc userStatus srcName inp = parse (orgDocParser userStatus 1) srcName inp
 
-main = do
-    (src:_) <- getArgs
-    t <- TIO.readFile src
-    case parseOrgDoc ["TODO"] src t of
-        Left err -> print err
-        Right val -> print $ _odOutline val
+-- main = do
+--     (src:_) <- getArgs
+--     t <- TIO.readFile src
+--     case parseOrgDoc ["TODO"] src t of
+--         Left err -> print err
+--         Right val -> print $ _odOutline val

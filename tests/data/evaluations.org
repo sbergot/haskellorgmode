@@ -1,0 +1,127 @@
+#+TITLE:     evaluations
+#+DATE:      [2013-03-27 mer.]
+#+DESCRIPTION:
+#+LANGUAGE:  fr
+#+OPTIONS:   H:3 num:t toc:1 \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
+#+OPTIONS:   skip:nil d:nil todo:t pri:nil tags:not-in-toc
+#+EXPORT_EXCLUDE_TAGS: noexport
+#+STYLE:  <link rel="stylesheet" type="text/css" href="css/style.css" />
+
+#+PROPERTY: EffortEstimated_ALL 0 0:30 1:00 2:00 4:00 8:00 16:00
+#+PROPERTY: EffortDone_ALL 0 0:30 1:00 2:00 4:00 8:00 16:00
+#+PROPERTY: EffortRemaining_ALL 0 0:30 1:00 2:00 4:00 8:00 16:00
+#+PROPERTY: TICKET
+#+COLUMNS: %70ITEM(Details) %7TODO(To Do) %5EffortEstimated(Estimation){:} %5EffortRemaining(Rest){:} %6TICKET %TAGS
+
+
+* TODO evaluations :top:
+  Dans différents projets, on souhaite évaluer des éléments du
+  référentiel. Dans C2R, on souhaite auditer des systèmes de
+  contrôles. Pour CNP, on souhaiter évaluer des entités et des
+  processus.
+
+** specs
+*** rapport entre le questionnaire et le référentiel
+    Les questions sont définies par des indicateurs. On regroupe une
+    liste de questions dans une configuration d'indicateurs. Dans cette
+    configuration, chaque question reçoit quelques métadonnées
+    supplémentaires (règle de visibilité, présence dans
+    l'historique).
+
+    Une configuration est définie sur une période de temps donnée et est
+    rattachée à un type d'objet du référentiel, ou à un objet du
+    référentiel en particulier.
+*** évaluation d'un élément du référentiel
+    Pour évaluer un objet, plusieurs chemins sont disponibles:
+
+    - ouvrir l'objet et aller sur l'onglet évaluation
+    - dans un écran de recherche, faire un clique droit --> évaluer
+
+    Quand on ouvre l'évaluation d'un objet, on va chercher quelles sont
+    les évaluation rattachées à cet objet ou à son type (selon le
+    paramètre "cadre de l'évaluation") et qui sont actives à cette date.
+
+    Selon le nombre de configurations trouvées, on effectue les actions
+    suivantes:
+
+    - pas de configuration: on affiche rien
+    - une configuration: on charge la liste de questions et on l'affiche
+    - plus d'une configuration: on affiche un message d'erreur
+*** évaluation d'une campagne (évaluation par panier)
+    Pour évaluer une campagne, plusieurs chemins sont disponibles:
+
+    - avec un dashboard spécial qui affiche une liste de sous-campagnes
+      disponibles, double cliquer sur la campagne souhaitée.
+    - un utilisateur reçoit une url par mail. En cliquant dessus, il
+      accède directement à l'écran d'évaluation de la campagne.
+    - dans un écran de recherche, on peut sélectionner un ensemble
+      d'objet pour constituer une sous-campagne ad-hoc et l'évaluer.
+
+    On peut choisir d'évaluer la portée d'une campagne. Celle-ci est
+    définie par une liste de questions. A partir de la liste de
+    question, on trouve la liste d'objets concernés par
+    l'évaluation. Cette liste d'objet constitue le panier d'objet à
+    évaluer.
+
+    A l'ouverture, l'écran affiche le panier d'objets, et la liste de
+    questions du premier élément du panier. Cette liste contient toutes
+    les questions de la portée de la campagnes dont la configuration
+    est rattachée à l'objet.
+
+**** changer d'élément du panier
+     On peut changer d'élément du panier en double cliquant sur un
+     élément de la liste, ou en utlilisant les boutons "suivant" ou
+     "précédent" en bas de l'écran.
+
+     Quand on change d'élément, plusieurs choses peuvent se passer selon
+     l'état du formulaire:
+
+     - le formulaire est vide: on change d'objet sans rien sauvegarder
+     - le formulaire n'est pas vide. Aucun champ obligatoire n'est vide:
+       on sauvegarde le contenu du formulaire.
+     - Le formulaire n'est pas vide et au moins un champ obligatoire est vide:
+       on affiche un message de confirmation qui prévient l'utilisateur
+       que les données ne seront pas sauvegardées. Il peut cliquer sur
+       annuler pour rester sur l'objet courant.
+** bugs :bug:
+*** écran d'évaluations (hors panier) [1/1]
+**** DONE les couleurs des seuils sur les formules ne fait rien
+     CLOSED: [2013-06-28 ven. 16:27]
+*** écran d'évaluations (panier) [1/2]
+**** DONE cliquer plusieurs fois rapidement sur le panier pour changer d'objet ==> bug
+     CLOSED: [2013-08-09 ven. 11:52]
+**** TODO le changement d'objet dans le panier est trop lent
+*** recherche de contrôles [/]
+**** TODO pb d'ouverture multiples avec clique droit
+     évaluation transverse, puis évaluation par objet --> on retombe
+     sur le même onglet au lieu d'en ouvrir un nouveau
+*** section analyse du contrôle [/]
+*** configuration des indicateurs [0/1]
+**** TODO possible de supprimer une section utilisée
+** wishlist
+*** écran d'évaluation
+*** TODO mettre en place les deux sections historiques
+    evals transverses & par objet
+*** configuration des évaluations                                       :C2R:
+**** TODO ajouter la sélection d'une devise dans les questions de type devise
+** backlog
+*** écran d'évaluation
+**** évaluation par panier                                              :CNP:
+***** TODO campagnes ad hoc
+      Dans un écran de recherche, on fait une multisélection --> évaluer par panier
+**** section historique                                                 :C2R:
+***** TODO il faut deux sections historiques (transverse/par objet)
+      :PROPERTIES:
+      :EffortEstimated: 8:00
+      :EffortRemaining: 8:00
+      :END:
+***** TODO ajouter une représentation en courbes
+**** évaluations mixtes                                                 :C2R:
+     On veut dans certaines évaluation avoir un jeu de questions qui
+     sont configurées par objet et un jeu de questions qui sont
+     configurées sur un ensemble d'objets.
+
+     Cette fonctionalité pourrait être définie par un nouveau type de
+     cadre d'évaluation (par type, par objet, par type et par objet)
+     dans lequel on fusionne une configuration par type et une
+     confugiration par objet.
