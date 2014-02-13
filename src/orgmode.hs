@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module OrgMode where
@@ -7,6 +8,9 @@ import Text.Parsec
 import Text.Parsec.Text
 import Control.Monad
 import Control.Applicative hiding (many)
+
+import Control.Lens (makeLenses)
+import Data.Aeson.TH (deriveJSON)
 
 type Paragraph = T.Text
 type NodeText = [Paragraph]
@@ -21,6 +25,8 @@ data Outline = Outline
     , _olText     :: NodeText
     , _olChildren :: [Outline]
     } deriving (Show)
+makeLenses ''Outline
+$(deriveJSON (drop 3) ''Outline)
 
 type Header = T.Text
 
@@ -28,6 +34,9 @@ data OrgDoc = OrgDoc
     { _odHeader   :: Header
     , _odOutline  :: Outline
     } deriving (Show)
+makeLenses ''OrgDoc
+$(deriveJSON (drop 3) ''OrgDoc)
+
 
 tilleol :: Parser T.Text
 tilleol = T.pack <$> (many $ noneOf "\n")
@@ -87,10 +96,3 @@ orgDocParser userStatus level = OrgDoc <$> headerParser <*> outlineParser userSt
 
 parseOrgDoc :: [Status] -> String -> T.Text -> Either ParseError OrgDoc
 parseOrgDoc userStatus srcName inp = parse (orgDocParser userStatus 1) srcName inp
-
--- main = do
---     (src:_) <- getArgs
---     t <- TIO.readFile src
---     case parseOrgDoc ["TODO"] src t of
---         Left err -> print err
---         Right val -> print $ _odOutline val
