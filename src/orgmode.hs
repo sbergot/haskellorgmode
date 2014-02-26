@@ -3,14 +3,16 @@
 
 module OrgMode where
 
+import qualified System.IO as SIO
 import qualified Data.Text as T
+import qualified Data.Text.IO as TIO
 import Text.Parsec
 import Text.Parsec.Text
 import Control.Monad
 import Control.Applicative hiding (many)
 
 import Control.Lens (makeLenses)
-import Data.Aeson.TH (deriveJSON)
+import Data.Aeson.TH
 
 type Paragraph = T.Text
 type NodeText = [Paragraph]
@@ -26,7 +28,7 @@ data Outline = Outline
     , _olChildren :: [Outline]
     } deriving (Show)
 makeLenses ''Outline
-$(deriveJSON (drop 3) ''Outline)
+$(deriveJSON (defaultOptions{fieldLabelModifier = drop 3}) ''Outline)
 
 type Header = T.Text
 
@@ -35,7 +37,7 @@ data OrgDoc = OrgDoc
     , _odOutline  :: Outline
     } deriving (Show)
 makeLenses ''OrgDoc
-$(deriveJSON (drop 3) ''OrgDoc)
+$(deriveJSON (defaultOptions{fieldLabelModifier = drop 3}) ''OrgDoc)
 
 
 tilleol :: Parser T.Text
@@ -96,3 +98,10 @@ orgDocParser userStatus level = OrgDoc <$> headerParser <*> outlineParser userSt
 
 parseOrgDoc :: [Status] -> String -> T.Text -> Either ParseError OrgDoc
 parseOrgDoc userStatus srcName inp = parse (orgDocParser userStatus 1) srcName inp
+
+parseOrgFile :: String -> [Status] -> IO (Either ParseError OrgDoc)
+parseOrgFile path tags = do
+    SIO.withFile path SIO.ReadMode $ \h -> do
+        SIO.hSetEncoding h SIO.utf8_bom
+        t <- TIO.hGetContents h
+        return $ parseOrgDoc tags path t

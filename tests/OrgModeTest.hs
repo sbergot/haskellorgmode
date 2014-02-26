@@ -6,8 +6,6 @@ import Test.Tasty
 import Test.Tasty.Hspec
 import OrgMode
 
-import qualified Data.Text.IO as TIO
-
 type OrgSpec = OrgDoc -> Expectation
 
 tests :: TestTree
@@ -20,10 +18,9 @@ dataPath = "tests\\data\\"
 
 withDoc :: String -> OrgSpec -> Expectation
 withDoc src spec = do
-    t <- TIO.readFile $ dataPath ++ src
-    either (parseFail . show) spec $ parseRes t
+    d <- parseOrgFile (dataPath ++ src) ["TODO"]
+    either (parseFail . show) spec d
   where
-    parseRes t = parseOrgDoc ["TODO"] src t
     parseFail msg = expectationFailure $
         "Failed to parse \"" ++ src ++ "\"\n" ++ "Error: \n" ++ msg
 
@@ -47,5 +44,3 @@ fullSpec = do
             withDoc "evaluations.org" firstChildren
         it "should have the correct title" $
             withDoc "evaluations.org" title
---        it "print" $
---            withDoc "evaluations.org" $ print . _odOutline

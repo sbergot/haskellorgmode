@@ -1,2 +1,2 @@
-* configuration des évaluations                                         :C2R:
-** TODO ajouter la sélection d'une devise dans les questions de type devise
+ï»¿* configuration des Ã©valuations                                         :C2R:
+** TODO ajouter la sÃ©lection d'une devise dans les questions de type devise
