@@ -25,36 +25,38 @@ withDoc src spec = do
     parseFail msg = expectationFailure $
         "Failed to parse \"" ++ src ++ "\"\n" ++ "Error: \n" ++ msg
 
-parseSuccess :: OrgSpec
-parseSuccess = const $ return ()
-
-firstChildren :: OrgSpec
-firstChildren doc = do
-    print doc
-    (length $ _olChildren $ _odOutline doc) `shouldBe` 4
-
-title :: OrgSpec
-title doc = (_olTitle $ _odOutline doc) `shouldBe` "evaluations"
-
 ok :: Expectation
 ok = return ()
 
 fullSpec :: Spec
 fullSpec = do
     describe "complex doc" $ do
+
         it "can be parsed successfully" $
-            withDoc "evaluations.org" parseSuccess
+            withDoc "evaluations.org" $ const ok
+
         it "can parse tags" $
-            withDoc "tags.org" parseSuccess
+            withDoc "tags.org" $ const ok
+
         it "should have four children" $
-            withDoc "evaluations.org" firstChildren
+            withDoc "evaluations.org" $ \d -> do
+                (length $ _olChildren $ _odOutline d) `shouldBe` 4
+
         it "should have the correct title" $
-            withDoc "evaluations.org" title
+            withDoc "evaluations.org" $ \d ->
+                (view (odOutline . olTitle) d) `shouldBe` "evaluations"
+
         it "should parse lists" $
             withDoc "lists.org" $ \d -> case (view (odOutline . olText) d) of
                 [ListBlock _] -> ok
                 _ -> expectationFailure $ "list not found: \n" ++ (show d)
+
         it "should handle mixed paragraphs/lists" $ withDoc "mix.org" $ \d ->
             case view (odOutline . olText) d of
                 [Paragraph _, ListBlock _] -> ok
-                _ -> expectationFailure $ "wrong structure: \n" ++ (show d)
+                m -> expectationFailure $ "wrong structure: \n" ++ (show m)
+
+        it "should handle multiple mixed paragraphs/lists" $ withDoc "mix_multiple.org" $ \d ->
+            case view (odOutline . olText) d of
+                [Paragraph _, ListBlock _, Paragraph _, Paragraph _, ListBlock _] -> ok
+                m -> expectationFailure $ "wrong structure: \n" ++ (show m)

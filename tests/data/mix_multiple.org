@@ -1,0 +1,16 @@
+* évaluation d'un élément du référentiel
+  Pour évaluer un objet, plusieurs chemins sont disponibles:
+
+  - ouvrir l'objet et aller sur l'onglet évaluation
+  - dans un écran de recherche, faire un clique droit --> évaluer
+
+  Quand on ouvre l'évaluation d'un objet, on va chercher quelles sont
+  les évaluation rattachées à cet objet ou à son type (selon le
+  paramètre "cadre de l'évaluation") et qui sont actives à cette date.
+
+  Selon le nombre de configurations trouvées, on effectue les actions
+  suivantes:
+
+  - pas de configuration: on affiche rien
+  - une configuration: on charge la liste de questions et on l'affiche
+  - plus d'une configuration: on affiche un message d'erreur

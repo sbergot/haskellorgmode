@@ -81,10 +81,21 @@ outlineParser userStatus level = do
     title <- T.pack <$> (many $ noneOf ":\n")
     tags <- sepBy tagParser (many $ char ' ')
     newline_
-    text <- nodeTextParser level
+    text <- grpLists <$> (nodeTextParser level)
     spaces
     children <- many $ try $ outlineParser userStatus (level + 1)
     return $ Outline (T.strip title) status Nothing [] tags text children
+
+grpLists :: [TextBlock] -> [TextBlock]
+grpLists blocks = go [] blocks where
+    go laccum bs = case bs of
+        (ListBlock [le]):rest -> go (le:laccum) rest
+        b:rest -> flush ++ (b : go [] rest)
+        [] -> flush
+      where
+        flush = case laccum of
+            [] -> []
+            _  -> [ListBlock $ reverse laccum]
 
 tagParser :: Parser Tag
 tagParser = do
@@ -111,7 +122,7 @@ listEntryParser level = do
 
 textBlockParser :: Int -> Parser TextBlock
 textBlockParser level = choice
-    [ (try $ ListBlock <$> (sepEndBy1 (listEntryParser level) (many1 newline)))
+    [ try $ (\le -> ListBlock [le]) <$> (listEntryParser level)
     , paragraphParser level
     ]
 
