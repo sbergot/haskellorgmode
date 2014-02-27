@@ -14,17 +14,32 @@ import Control.Applicative hiding (many)
 import Control.Lens (makeLenses)
 import Data.Aeson.TH
 
-type Paragraph = T.Text
-type NodeText = [Paragraph]
+data TextBlock = Paragraph T.Text | ListBlock [ListEntry]
+    deriving (Show)
+
+data ListEntry = ListEntry
+    { _leTitle :: T.Text
+    , _leContent :: [TextBlock]
+    }
+    deriving (Show)
+
+makeLenses ''ListEntry
+$(deriveJSON (defaultOptions{fieldLabelModifier = drop 3}) ''ListEntry)
+
+makeLenses ''TextBlock
+$(deriveJSON (defaultOptions) ''TextBlock)
+
 type Tag = T.Text
-type Tags = [Tag]
 type Status = T.Text
+type Date = T.Text
 
 data Outline = Outline
     { _olTitle    :: T.Text
     , _olStatus   :: Maybe Status
-    , _olTags     :: Tags
-    , _olText     :: NodeText
+    , _olCloseDate :: Maybe Date
+    , _olProperties :: [(Int, Int)]
+    , _olTags     :: [Tag]
+    , _olText     :: [TextBlock]
     , _olChildren :: [Outline]
     } deriving (Show)
 makeLenses ''Outline
@@ -69,7 +84,7 @@ outlineParser userStatus level = do
     text <- nodeTextParser level
     spaces
     children <- many $ try $ outlineParser userStatus (level + 1)
-    return $ Outline (T.strip title) status tags text children
+    return $ Outline (T.strip title) status Nothing [] tags text children
 
 tagParser :: Parser Tag
 tagParser = do
@@ -78,16 +93,30 @@ tagParser = do
     char_ ':'
     return $ T.pack tag
 
-paragraphParser :: Int -> Parser Paragraph
-paragraphParser level = T.unlines <$> many line where
+paragraphParser :: Int -> Parser TextBlock
+paragraphParser level = Paragraph <$> T.unlines <$> many1 line where
     line = do
         replicateM_ (level + 1) $ char_ ' '
         ws <- tilleol
         newline_
         return ws
 
-nodeTextParser :: Int -> Parser NodeText
-nodeTextParser level = sepBy (paragraphParser level) (many1 newline_)
+listEntryParser :: Int -> Parser ListEntry
+listEntryParser level = do
+    replicateM_ (level + 1) $ char_ ' '
+    string "- "
+    title <- tilleol
+    content <- nodeTextParser (level + 2)
+    return $ ListEntry title content
+
+textBlockParser :: Int -> Parser TextBlock
+textBlockParser level = choice
+    [ (try $ ListBlock <$> (sepEndBy1 (listEntryParser level) (many1 newline)))
+    , paragraphParser level
+    ]
+
+nodeTextParser :: Int -> Parser [TextBlock]
+nodeTextParser level = sepEndBy (textBlockParser level) (many1 newline_)
 
 headerParser :: Parser Header
 headerParser = T.concat <$> sepBy hline newline_ where

@@ -1,0 +1,5 @@
+* évaluation d'un élément du référentiel
+  Pour évaluer un objet, plusieurs chemins sont disponibles:
+
+  - ouvrir l'objet et aller sur l'onglet évaluation
+  - dans un écran de recherche, faire un clique droit --> évaluer
