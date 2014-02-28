@@ -1,0 +1,2 @@
+* DONE cliquer plusieurs fois rapidement sur le panier pour changer d'objet ==> bug
+  CLOSED: [2013-08-09 ven. 11:52]

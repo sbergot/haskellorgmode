@@ -8,4 +8,4 @@ main :: IO ()
 main = defaultMain tests
 
 tests :: TestTree
-tests = testGroup "Tests" [OrgModeTest.tests]
+tests = testGroup "" [OrgModeTest.tests]

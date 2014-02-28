@@ -24,26 +24,26 @@ data ListEntry = ListEntry
     deriving (Show)
 
 makeLenses ''ListEntry
-$(deriveJSON (defaultOptions{fieldLabelModifier = drop 3}) ''ListEntry)
-
+deriveJSON (defaultOptions{fieldLabelModifier = drop 3}) ''ListEntry
 makeLenses ''TextBlock
-$(deriveJSON (defaultOptions) ''TextBlock)
+deriveJSON (defaultOptions) ''TextBlock
 
 type Tag = T.Text
 type Status = T.Text
 type Date = T.Text
+type Property = (T.Text, T.Text)
 
 data Outline = Outline
     { _olTitle    :: T.Text
     , _olStatus   :: Maybe Status
     , _olCloseDate :: Maybe Date
-    , _olProperties :: [(Int, Int)]
+    , _olProperties :: [Property]
     , _olTags     :: [Tag]
     , _olText     :: [TextBlock]
     , _olChildren :: [Outline]
     } deriving (Show)
 makeLenses ''Outline
-$(deriveJSON (defaultOptions{fieldLabelModifier = drop 3}) ''Outline)
+deriveJSON (defaultOptions{fieldLabelModifier = drop 3}) ''Outline
 
 type Header = T.Text
 
@@ -52,8 +52,10 @@ data OrgDoc = OrgDoc
     , _odOutline  :: Outline
     } deriving (Show)
 makeLenses ''OrgDoc
-$(deriveJSON (defaultOptions{fieldLabelModifier = drop 3}) ''OrgDoc)
+deriveJSON (defaultOptions{fieldLabelModifier = drop 3}) ''OrgDoc
 
+lvlPrefix :: Int -> Parser ()
+lvlPrefix level = replicateM_ (level + 1) $ char_ ' '
 
 tilleol :: Parser T.Text
 tilleol = T.pack <$> (many $ noneOf "\n")
@@ -67,8 +69,32 @@ space_ = noOut space
 char_ :: Char -> Parser ()
 char_ c = noOut $ char c
 
+string_ :: String -> Parser ()
+string_ s = noOut $ string s
+
 newline_ :: Parser ()
 newline_ = noOut newline
+
+propParser :: Int -> Parser [Property]
+propParser level = do
+    key "PROPERTIES"
+    props <- manyTill singleProp (try $ key "END")
+    return props
+  where
+    key name = do
+        lvlPrefix level
+        char_ ':'
+        string_ name
+        char_ ':'
+        newline_
+    singleProp = do
+        lvlPrefix level
+        char_ ':'
+        name <- many1 (noneOf ": ")
+        string_ ": "
+        val <- tilleol
+        newline_
+        return (T.pack name, val)
 
 outlineParser :: [Status] ->  Int -> Parser Outline
 outlineParser userStatus level = do
@@ -79,12 +105,15 @@ outlineParser userStatus level = do
         space_
         return st
     title <- T.pack <$> (many $ noneOf ":\n")
-    tags <- sepBy tagParser (many $ char ' ')
+    tags <- option [] $ try tagParser
     newline_
+    closeDate <- optionMaybe $ try $ closeDateParser level
+    props <- option [] (try $ propParser level)
+    _ <- many newline_
     text <- grpLists <$> (nodeTextParser level)
     spaces
     children <- many $ try $ outlineParser userStatus (level + 1)
-    return $ Outline (T.strip title) status Nothing [] tags text children
+    return $ Outline (T.strip title) status closeDate props tags text children
 
 grpLists :: [TextBlock] -> [TextBlock]
 grpLists blocks = go [] blocks where
@@ -97,25 +126,33 @@ grpLists blocks = go [] blocks where
             [] -> []
             _  -> [ListBlock $ reverse laccum]
 
-tagParser :: Parser Tag
+tagParser :: Parser [Tag]
 tagParser = do
     char_ ':'
-    tag <- many (noneOf " :\n")
-    char_ ':'
-    return $ T.pack tag
+    tags <- sepEndBy (many1 (noneOf " :\n")) (char_ ':')
+    return $ T.pack <$> tags
 
 paragraphParser :: Int -> Parser TextBlock
-paragraphParser level = Paragraph <$> T.unlines <$> many1 line where
+paragraphParser level = Paragraph <$> (T.strip . T.unlines) <$> many1 line where
     line = do
-        replicateM_ (level + 1) $ char_ ' '
+        lvlPrefix level
         ws <- tilleol
         newline_
         return ws
 
+closeDateParser :: Int -> Parser Date
+closeDateParser level = do
+    lvlPrefix level
+    string_ "CLOSED: ["
+    date <- many1 $ noneOf "]\n"
+    char_ ']'
+    newline_
+    return $ T.pack date
+
 listEntryParser :: Int -> Parser ListEntry
 listEntryParser level = do
-    replicateM_ (level + 1) $ char_ ' '
-    string "- "
+    lvlPrefix level
+    string_ "- "
     title <- tilleol
     content <- nodeTextParser (level + 2)
     return $ ListEntry title content

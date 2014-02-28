@@ -1,0 +1,7 @@
+* TODO il faut deux sections historiques (transverse/par objet)
+  :PROPERTIES:
+  :EffortEstimated: 8:00
+  :EffortRemaining: 8:00
+  :END:
+
+  yolo!
